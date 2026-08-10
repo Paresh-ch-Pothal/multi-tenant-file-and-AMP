@@ -3,13 +3,16 @@ import { createFolder, deleteNode, listNodes, renameNode, uploadFile } from '../
 import { optionalAuth, requireAuth } from '../middleware/auth.middleware'
 import { requirePermission } from '../middleware/rbac.middleware'
 import { upload } from '../middleware/upload.middleware'
+import { requireAuthOrApiKey } from '../middleware/combinedAuth.middleware'
 
 
 const router = express.Router()
 
 router.post('/upload', optionalAuth, upload.single('file'), uploadFile);
 router.post("/createFolder",requireAuth,requirePermission('node:create_folder'),createFolder)
-router.get("/",requireAuth,requirePermission('node:read'),listNodes)
+
+
+router.get("/",requireAuthOrApiKey,requirePermission('node:read'),listNodes)
 
 router.patch('/:id', requireAuth, requirePermission('node:edit'),renameNode);
 

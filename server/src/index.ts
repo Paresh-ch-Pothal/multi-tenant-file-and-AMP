@@ -10,6 +10,8 @@ import settingsRoutes from './routes/settings.routes';
 import auditLogRoutes from './routes/auditLog.routes';
 import tennantRoutes from './routes/tenant.routes';
 import roleRoutes from './routes/role.routes';
+import userRoutes from './routes/user.routes';
+import apiKeyRoutes from './routes/apiKey.routes';
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ app.use("v1/settings",settingsRoutes)
 app.use("v1/audit",auditLogRoutes)
 app.use("v1/tenant",tennantRoutes)
 app.use("v1/roles",roleRoutes)
+app.use("v1/users",userRoutes)
+app.use("v1/api-keys",apiKeyRoutes)
 
 
 const PORT = process.env.PORT || 4000;
