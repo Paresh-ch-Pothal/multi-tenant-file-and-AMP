@@ -29,7 +29,7 @@ export interface INode {
 }
 
 const fileMetadataSchema = new Schema<IFileMetadata>({
-  storage_key: { type: String, required: true },
+  storage_key: { type: String, required: false },
   size_bytes: { type: Number, required: true },
   mime_type: { type: String, required: true },
   original_name: { type: String, required: true },

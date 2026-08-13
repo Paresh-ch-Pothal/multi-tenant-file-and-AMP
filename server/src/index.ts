@@ -17,7 +17,18 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Total-Count'],
+  credentials: true,
+  
+  maxAge: 86400,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
 
@@ -27,12 +38,12 @@ app.get('/health', (_req, res) => {
 
 app.use("/v1/auth",authRoutes)
 app.use("/v1/nodes",nodeRoutes)
-app.use("v1/settings",settingsRoutes)
-app.use("v1/audit",auditLogRoutes)
-app.use("v1/tenant",tennantRoutes)
-app.use("v1/roles",roleRoutes)
-app.use("v1/users",userRoutes)
-app.use("v1/api-keys",apiKeyRoutes)
+app.use("/v1/settings",settingsRoutes)
+app.use("/v1/audit",auditLogRoutes)
+app.use("/v1/tenant",tennantRoutes)
+app.use("/v1/roles",roleRoutes)
+app.use("/v1/users",userRoutes)
+app.use("/v1/api-keys",apiKeyRoutes)
 
 
 const PORT = process.env.PORT || 4000;

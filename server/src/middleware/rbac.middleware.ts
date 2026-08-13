@@ -36,6 +36,8 @@ export function requirePermission(permission: Permission) {
         permissions: role.permissions,
       };
 
+      console.log(req.tenantUser);
+
       next();
     } catch (err) {
       console.error(err);

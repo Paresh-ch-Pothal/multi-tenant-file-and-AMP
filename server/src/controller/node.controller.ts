@@ -20,6 +20,7 @@ export async function uploadFile(req: Request, res: Response) {
 
   // resolve target folder — works for both authenticated and public upload paths
   const parentFolder = await Node.findOne({ _id: parent_id, is_deleted: false, type: 'folder' });
+  console.log(parentFolder)
   if (!parentFolder) {
     return res.status(404).json({ error: 'target folder not found' });
   }
@@ -100,7 +101,7 @@ export async function uploadFile(req: Request, res: Response) {
     await Node.deleteOne({ _id: pendingNode._id });
 
     // best-effort cleanup if partial object landed in S3
-    await deleteFromS3(storageKey).catch(() => {});
+    await deleteFromS3(storageKey).catch(() => { });
 
     await writeAuditLog({
       clientId: parentFolder.client_id,
@@ -119,93 +120,94 @@ export async function uploadFile(req: Request, res: Response) {
 }
 
 
-export const createFolder = () => {
-    async (req: Request, res: Response) => {
-        try {
-            const { name, parent_id } = req.body;
-            const clientId = req.clientId;
+export async function createFolder(req: Request, res: Response) {
+  try {
+    const { name, parent_id } = req.body;
+    const clientId = req.clientId;
 
-            if (!name) return res.status(400).json({ error: 'name is required' });
-            if (!clientId) return res.status(401).json({ error: 'unauthenticated' });
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (!clientId) return res.status(401).json({ error: 'unauthenticated' });
 
-            let ancestors: Types.ObjectId[] = [];
-            let parentObjectId: Types.ObjectId | null = null;
+    let ancestors: Types.ObjectId[] = [];
+    let parentObjectId: Types.ObjectId | null = null;
 
-            if (parent_id) {
-                if (!Types.ObjectId.isValid(parent_id)) {
-                    return res.status(400).json({ error: 'invalid parent_id' });
-                }
-                const parent = await Node.findOne({ _id: parent_id, client_id: clientId, is_deleted: false });
-                if (!parent) return res.status(404).json({ error: 'parent folder not found' });
-                if (parent.type !== 'folder') return res.status(400).json({ error: 'parent must be a folder' });
+    if (parent_id) {
+      if (!Types.ObjectId.isValid(parent_id)) {
+        return res.status(400).json({ error: 'invalid parent_id' });
+      }
+      const parent = await Node.findOne({ _id: parent_id, client_id: clientId, is_deleted: false });
+      if (!parent) return res.status(404).json({ error: 'parent folder not found' });
+      if (parent.type !== 'folder') return res.status(400).json({ error: 'parent must be a folder' });
 
-                ancestors = [...parent.ancestors, parent._id];
-                parentObjectId = parent._id;
-            }
-
-            const newFolder = await Node.create({
-                client_id: clientId,
-                type: 'folder',
-                name,
-                parent_id: parentObjectId,
-                ancestors,
-                is_public_upload: false,
-                file_metadata: null,
-                is_deleted: false,
-                created_by: { actor_type: 'user', actor_id: req.userId || null },
-                created_at: new Date(),
-                updated_at: new Date(),
-            });
-
-            await writeAuditLog({
-                clientId: req.tenantUser!.client_id,
-                actor: {
-                    type: 'user',
-                    id: req.tenantUser!._id,
-                    label: null, // could look up email if you want it in the log directly
-                },
-                action: 'node.create_folder',
-                target: { node_id: newFolder._id, parent_id: newFolder.parent_id },
-                metadata: { name: newFolder.name },
-                status: 'success',
-                req,
-            });
-
-            return res.status(201).json(newFolder);
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'internal server error' });
-        }
+      ancestors = [...parent.ancestors, parent._id];
+      parentObjectId = parent._id;
     }
+
+    console.log(name)
+    console.log(parent_id)
+
+    const newFolder = await Node.create({
+      client_id: clientId,
+      type: 'folder',
+      name,
+      parent_id: parentObjectId,
+      ancestors,
+      is_public_upload: false,
+      file_metadata: null,
+      is_deleted: false,
+      created_by: { actor_type: 'user', actor_id: req.userId || null },
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await writeAuditLog({
+      clientId: req.tenantUser!.client_id,
+      actor: {
+        type: 'user',
+        id: req.tenantUser!._id,
+        label: null, // could look up email if you want it in the log directly
+      },
+      action: 'node.create_folder',
+      target: { node_id: newFolder._id, parent_id: newFolder.parent_id },
+      metadata: { name: newFolder.name },
+      status: 'success',
+      req,
+    });
+
+    return res.status(201).json(newFolder);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
 }
 
 export async function listNodes(req: Request, res: Response) {
-    try {
-        const clientId = req.tenantUser!.client_id; // now comes from RBAC middleware, not JWT directly
-        const parentIdParam = req.query.parent_id as string | undefined;
+  try {
+    const clientId = req.tenantUser!.client_id; // now comes from RBAC middleware, not JWT directly
+    const parentIdParam = req.query.parent_id as string | undefined;
 
-        let parentId: Types.ObjectId | null = null;
-        if (parentIdParam) {
-            if (!Types.ObjectId.isValid(parentIdParam)) {
-                return res.status(400).json({ error: 'invalid parent_id' });
-            }
-            parentId = new Types.ObjectId(parentIdParam);
-        }
-
-        const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids); // ← new line
-
-        const children = await Node.find({
-            client_id: clientId,
-            parent_id: parentId,
-            is_deleted: false,
-            ...scopeFilter, // ← spread the extra restriction into the query
-        }).sort({ type: 1, name: 1 });
-
-        return res.json(children);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'internal server error' });
+    let parentId: Types.ObjectId | null = null;
+    if (parentIdParam) {
+      if (!Types.ObjectId.isValid(parentIdParam)) {
+        return res.status(400).json({ error: 'invalid parent_id' });
+      }
+      parentId = new Types.ObjectId(parentIdParam);
     }
+
+    const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids); // ← new line
+
+    const children = await Node.find({
+      client_id: clientId,
+      parent_id: parentId,
+      is_deleted: false,
+      ...scopeFilter, // ← spread the extra restriction into the query
+    }).sort({ type: 1, name: 1 });
+
+    return res.json(children);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
 }
 
 
