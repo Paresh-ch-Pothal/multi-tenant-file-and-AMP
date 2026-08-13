@@ -8,6 +8,8 @@ import { RolesPage } from './pages/roles/RolePage';
 import { UsersPage } from './pages/users/UserPage';
 import { AuditLogPage } from './pages/audit/Auditpage';
 import { SettingsPage } from './pages/settings/SettingPage';
+import { ApiKeysPage } from './pages/apikeys/ApiKeys';
+import { PublicUploadPage } from './pages/publicupload/PublicUpload';
 
 
 
@@ -26,6 +28,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/upload/:folderId" element={<PublicUploadPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShellLayout />}>
@@ -34,6 +37,7 @@ export default function App() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/audit-logs" element={<AuditLogPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/api-keys" element={<ApiKeysPage />} />
         </Route>
       </Route>
 
