@@ -13,6 +13,10 @@ export interface Node {
   parent_id: string | null;
   ancestors: string[];
   is_public_upload: boolean;
+  is_visible_external: boolean;
+  description: string | null;
+  tags: string[];
+  thumbnail_url: string | null;
   file_metadata: FileMetadata | null;
   is_deleted: boolean;
   created_at: string;

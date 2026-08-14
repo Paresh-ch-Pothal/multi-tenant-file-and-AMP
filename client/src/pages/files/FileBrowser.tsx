@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Folder, File as FileIcon, Plus, Upload, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Folder, File as FileIcon, Plus, Upload, MoreVertical, Pencil, Trash2, Globe, Eye } from 'lucide-react';
 import { type Node } from '../../types/node';
 import * as nodeService from '../../services/node.services';
 
@@ -183,6 +183,9 @@ export function FileBrowser() {
                       <span className={node.type === 'folder' ? 'font-medium text-slate-900 hover:underline' : 'text-slate-700'}>
                         {node.name}
                       </span>
+                      {node.type === 'folder' && node.is_public_upload && (
+                        <Globe size={12} className="shrink-0 text-green-600" />
+                      )}
                     </button>
                   </td>
                   <td className="px-4 py-2.5 text-slate-500">
@@ -191,6 +194,38 @@ export function FileBrowser() {
                   <td className="px-4 py-2.5 text-slate-500">{formatDate(node.updated_at)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-1">
+                      {node.type === 'folder' && (
+                        <button
+                          onClick={async () => {
+                            await nodeService.togglePublicUpload(node._id, !node.is_public_upload);
+                            load(currentFolderId);
+                          }}
+                          title={node.is_public_upload ? 'Disable public upload' : 'Enable public upload'}
+                          aria-label="Toggle public upload"
+                          className={`rounded p-1 transition-colors ${node.is_public_upload
+                            ? 'text-green-600 hover:bg-green-50'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                            }`}
+                        >
+                          <Globe size={16} />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          await nodeService.toggleVisibleExternal(node._id, !node.is_visible_external);
+                          load(currentFolderId);
+                        }}
+                        title={node.is_visible_external ? 'Hide from external catalog' : 'Show in external catalog'}
+                        aria-label="Toggle external visibility"
+                        className={`rounded p-1 transition-colors ${node.is_visible_external
+                            ? 'text-brand-primary hover:bg-brand-primary/10'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                          }`}
+                      >
+                        <Eye size={16} />
+                      </button>
+
                       <button
                         onClick={() => {
                           setRenameTarget(node);

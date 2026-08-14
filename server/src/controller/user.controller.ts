@@ -82,3 +82,112 @@ export async function listUsers(req: Request, res: Response) {
     return res.status(500).json({ error: 'internal server error' });
   }
 }
+
+// PATCH /api/v1/tenant/users/:id
+export async function updateUser(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { email, role_id } = req.body;
+
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid user id' });
+    }
+
+    const clientId = req.tenantUser!.client_id;
+    const targetUser = await TenantUser.findOne({ _id: id, client_id: clientId });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+
+    const changes: Record<string, unknown> = {};
+
+    if (email) {
+      const cleanEmail = email.toLowerCase().trim();
+      if (cleanEmail !== targetUser.email) {
+        const emailTaken = await TenantUser.findOne({
+          client_id: clientId,
+          email: cleanEmail,
+          _id: { $ne: targetUser._id },
+        });
+        if (emailTaken) {
+          return res.status(409).json({ error: 'a user with this email already exists' });
+        }
+        changes.old_email = targetUser.email;
+        changes.new_email = cleanEmail;
+        targetUser.email = cleanEmail;
+      }
+    }
+
+    if (role_id !== undefined) {
+      if (role_id === null) {
+        targetUser.role_id = null;
+      } else {
+        if (!Types.ObjectId.isValid(role_id)) {
+          return res.status(400).json({ error: 'invalid role_id' });
+        }
+        const role = await TenantRole.findOne({ _id: role_id, client_id: clientId });
+        if (!role) {
+          return res.status(404).json({ error: 'role not found' });
+        }
+        changes.new_role_name = role.role_name;
+        targetUser.role_id = role._id;
+      }
+    }
+
+    await targetUser.save();
+
+    await writeAuditLog({
+      clientId,
+      actor: { type: 'user', id: req.tenantUser!._id, label: null },
+      action: 'user.role_change',
+      target: { user_id: targetUser._id },
+      metadata: changes,
+      status: 'success',
+      req,
+    });
+
+    return res.json(targetUser);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+// DELETE /api/v1/tenant/users/:id
+export async function deleteUser(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid user id' });
+    }
+
+    const clientId = req.tenantUser!.client_id;
+
+    // prevent a user from deleting themselves — avoids locking yourself out by accident
+    if (id === req.tenantUser!._id.toString()) {
+      return res.status(400).json({ error: 'you cannot delete your own account' });
+    }
+
+    const targetUser = await TenantUser.findOne({ _id: id, client_id: clientId });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+
+    await TenantUser.deleteOne({ _id: targetUser._id });
+
+    await writeAuditLog({
+      clientId,
+      actor: { type: 'user', id: req.tenantUser!._id, label: null },
+      action: 'user.role_change',
+      target: { user_id: targetUser._id },
+      metadata: { deleted_email: targetUser.email },
+      status: 'success',
+      req,
+    });
+
+    return res.json({ message: 'user deleted' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}

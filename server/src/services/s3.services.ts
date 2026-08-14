@@ -1,7 +1,7 @@
 import { Upload } from '@aws-sdk/lib-storage';
-import { DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
-import { s3Client, S3_BUCKET } from '../config/s3';
+import { s3Client, S3_BUCKET, S3_PUBLIC_BUCKET } from '../config/s3';
 
 export async function uploadToS3(params: {
   storageKey: string;
@@ -43,5 +43,41 @@ export async function deleteManyFromS3(storageKeys: string[]): Promise<void> {
         Delete: { Objects: chunk.map((key) => ({ Key: key })) },
       })
     );
+  }
+}
+
+
+export async function uploadPublicThumbnail(params: {
+  storageKey: string;
+  body: Buffer;
+  contentType: string;
+}): Promise<string> {
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: params.storageKey,
+      Body: params.body,
+      ContentType: params.contentType,
+      ACL: 'public-read', // thumbnails only — never use this for the main file bucket
+    })
+  );
+
+  return `https://${S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.storageKey}`;
+}
+
+
+export async function deleteFromPublicBucket(storageKey: string): Promise<void> {
+  await s3Client.send(
+    new DeleteObjectCommand({ Bucket: S3_PUBLIC_BUCKET, Key: storageKey })
+  );
+}
+
+
+export function extractKeyFromPublicUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname.replace(/^\//, ''); // strip leading slash
+  } catch {
+    return null;
   }
 }

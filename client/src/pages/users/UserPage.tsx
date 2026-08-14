@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus } from 'lucide-react';
+import { Pencil, Trash2, UserPlus } from 'lucide-react';
 import { type TenantUser } from '../../types/user';
 import { type Role } from '../../types/role';
 import * as userService from '../../services/user.services';
@@ -28,6 +28,12 @@ export function UsersPage() {
   const [email, setEmail] = useState('');
   const [roleId, setRoleId] = useState('');
 
+  const [editTarget, setEditTarget] = useState<TenantUser | null>(null);
+  const [editEmail, setEditEmail] = useState('');
+  const [editRoleId, setEditRoleId] = useState('');
+
+  const [deleteTarget, setDeleteTarget] = useState<TenantUser | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,6 +59,38 @@ export function UsersPage() {
       load();
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to send invite.');
+    }
+  }
+
+  function openEdit(user: TenantUser) {
+    setEditTarget(user);
+    setEditEmail(user.email);
+    const currentRoleId = typeof user.role_id === 'object' ? user.role_id?._id : user.role_id;
+    setEditRoleId(currentRoleId || '');
+  }
+
+  async function handleUpdate() {
+    if (!editTarget || !editEmail.trim()) return;
+    try {
+      await userService.updateUser(editTarget._id, {
+        email: editEmail.trim(),
+        role_id: editRoleId || null,
+      });
+      setEditTarget(null);
+      load();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to update user.');
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      await userService.deleteUser(deleteTarget._id);
+      setDeleteTarget(null);
+      load();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to delete user.');
     }
   }
 
@@ -91,20 +129,45 @@ export function UsersPage() {
               <th className="px-4 py-2.5">Role</th>
               <th className="px-4 py-2.5">Status</th>
               <th className="px-4 py-2.5">Invited</th>
+              <th className="w-20 px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No team members yet.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No team members yet.</td></tr>
             ) : (
               users.map((user) => (
                 <tr key={user._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                   <td className="px-4 py-2.5 text-slate-900">{user.email}</td>
-                  <td className="px-4 py-2.5 text-slate-500">{roleName(user.role_id)}</td>
+                  <td className="px-4 py-2.5">
+                    {user.role_id ? (
+                      <span className="text-slate-500">{roleName(user.role_id)}</span>
+                    ) : (
+                      <Badge variant="warning">No role assigned</Badge>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5"><Badge variant={statusVariant(user.status)}>{user.status}</Badge></td>
                   <td className="px-4 py-2.5 text-slate-500">{formatDate(user.created_at)}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => openEdit(user)}
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        title="Edit user"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(user)}
+                        className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        title="Delete user"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
@@ -130,6 +193,40 @@ export function UsersPage() {
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setInviteOpen(false)}>Cancel</Button>
             <Button onClick={handleInvite} disabled={!email.trim() || !roleId}>Send invite</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit team member">
+        <div className="space-y-4">
+          <Input
+            label="Email address"
+            type="email"
+            value={editEmail}
+            onChange={(e) => setEditEmail(e.target.value)}
+            autoFocus
+          />
+          <Select label="Role" value={editRoleId} onChange={(e) => setEditRoleId(e.target.value)}>
+            <option value="">No role assigned</option>
+            {roles.map((r) => (
+              <option key={r._id} value={r._id}>{r.role_name}</option>
+            ))}
+          </Select>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button onClick={handleUpdate} disabled={!editEmail.trim()}>Save</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove team member">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Remove "{deleteTarget?.email}" from your organization? They will lose access immediately.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="danger" onClick={handleDelete}>Remove</Button>
           </div>
         </div>
       </Modal>

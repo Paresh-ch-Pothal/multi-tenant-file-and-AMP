@@ -9,7 +9,8 @@ export type AuditAction =
   | 'role.create'
   | 'apikey.create'
   | 'apikey.revoke'
-  | 'settings.update';
+  | 'settings.update'
+  | 'node.metadata_update';
 
 export interface AuditLogEntry {
   _id: string;
@@ -45,4 +46,5 @@ export const ACTION_OPTIONS: { value: AuditAction; label: string }[] = [
   { value: 'apikey.create', label: 'API key created' },
   { value: 'apikey.revoke', label: 'API key revoked' },
   { value: 'settings.update', label: 'Settings updated' },
+  { value: 'node.metadata_update', label: 'Details updated' },
 ];

@@ -12,6 +12,7 @@ import tennantRoutes from './routes/tenant.routes';
 import roleRoutes from './routes/role.routes';
 import userRoutes from './routes/user.routes';
 import apiKeyRoutes from './routes/apiKey.routes';
+import catalogRoutes from './routes/catalog.routes';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use("/v1/tenant",tennantRoutes)
 app.use("/v1/roles",roleRoutes)
 app.use("/v1/users",userRoutes)
 app.use("/v1/api-keys",apiKeyRoutes)
+app.use("/v1/catalog", catalogRoutes);
 
 
 const PORT = process.env.PORT || 4000;

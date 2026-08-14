@@ -11,7 +11,8 @@ export type AuditAction =
   | 'role.create'          // ← new
   | 'apikey.create'
   | 'apikey.revoke'
-  | 'settings.update';
+  | 'settings.update'
+  | 'node.metadata_update'; // ← new
 
 interface IAuditActor {
   type: 'user' | 'api_key' | 'public';

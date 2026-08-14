@@ -14,12 +14,16 @@ interface IFileMetadata {
 
 export interface INode {
   _id: Types.ObjectId;
-  client_id: Types.ObjectId; 
+  client_id: Types.ObjectId;
   type: 'folder' | 'file';
   name: string;
   parent_id: Types.ObjectId | null;
   ancestors: Types.ObjectId[];
   is_public_upload: boolean;
+  is_visible_external: boolean;   // ← new: controls whether this shows in the developer-facing catalog
+  description: string | null;      // ← new
+  tags: string[];                  // ← new
+  thumbnail_url: string | null;    // ← new
   file_metadata: IFileMetadata | null;
   is_deleted: boolean;
   created_by: IActor;
@@ -47,6 +51,10 @@ const nodeSchema = new Schema<INode>({
   parent_id: { type: Schema.Types.ObjectId, ref: 'Node', default: null, index: true },
   ancestors: { type: [Schema.Types.ObjectId], ref: 'Node', default: [], index: true },
   is_public_upload: { type: Boolean, default: false },
+  is_visible_external: { type: Boolean, default: false, index: true }, // opt-in, not opt-out — admin explicitly chooses what's shown
+  description: { type: String, default: null, maxlength: 2000 },
+  tags: { type: [String], default: [], index: true },
+  thumbnail_url: { type: String, default: null },
   file_metadata: { type: fileMetadataSchema, default: null },
   is_deleted: { type: Boolean, default: false },
   created_by: { type: actorSchema, required: true },
@@ -54,6 +62,8 @@ const nodeSchema = new Schema<INode>({
   updated_at: { type: Date, default: Date.now },
   upload_status: { type: String, enum: ['pending', 'complete'], default: undefined },
 }, { versionKey: false });
+
+nodeSchema.index({ client_id: 1, tags: 1 });
 
 nodeSchema.index({ client_id: 1, parent_id: 1 });
 nodeSchema.index({ client_id: 1, ancestors: 1 });

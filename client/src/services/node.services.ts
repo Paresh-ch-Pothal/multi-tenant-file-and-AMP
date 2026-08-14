@@ -43,3 +43,13 @@ export async function uploadFile(file: File, parentId: string, onProgress?: (pct
   });
   return data;
 }
+
+export async function togglePublicUpload(id: string, isPublic: boolean): Promise<Node> {
+  const { data } = await api.patch(`/nodes/${id}/public-upload`, { is_public_upload: isPublic });
+  return data;
+}
+
+export async function toggleVisibleExternal(id: string, isVisible: boolean): Promise<Node> {
+  const { data } = await api.patch(`/nodes/${id}/metadata`, { is_visible_external: isVisible });
+  return data;
+}

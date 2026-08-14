@@ -11,3 +11,4 @@ export const s3Client = new S3Client({
 });
 
 export const S3_BUCKET = process.env.AWS_S3_BUCKET as string;
+export const S3_PUBLIC_BUCKET = process.env.AWS_S3_PUBLIC_BUCKET as string;

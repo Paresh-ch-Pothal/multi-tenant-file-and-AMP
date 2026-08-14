@@ -4,12 +4,12 @@ import { Node } from '../models/node';
 import { buildScopeFilter } from '../services/scopedFilter';
 import { writeAuditLog } from '../services/auditLog.services';
 import { buildStorageKey, sanitizeFilename } from '../services/sanitization';
-import { deleteFromS3, deleteManyFromS3, uploadToS3 } from '../services/s3.services';
+import { deleteFromPublicBucket, deleteFromS3, deleteManyFromS3, extractKeyFromPublicUrl, uploadPublicThumbnail, uploadToS3 } from '../services/s3.services';
 
 
 export async function uploadFile(req: Request, res: Response) {
   const file = req.file; // from multer
-  const { parent_id } = req.body;
+  const { parent_id, description, tags } = req.body;
 
   if (!file) {
     return res.status(400).json({ error: 'file is required' });
@@ -59,6 +59,11 @@ export async function uploadFile(req: Request, res: Response) {
       ? { actor_type: 'user', actor_id: req.tenantUser!._id }
       : { actor_type: 'public', actor_id: null },
     upload_status: 'pending', // see schema note below
+    description: description || null,
+    tags: Array.isArray(tags) ? tags : [],
+    thumbnail_url: null,
+    created_at: new Date(),
+    updated_at: new Date(),
   });
 
   const storageKey = buildStorageKey(
@@ -122,7 +127,7 @@ export async function uploadFile(req: Request, res: Response) {
 
 export async function createFolder(req: Request, res: Response) {
   try {
-    const { name, parent_id } = req.body;
+    const { name, parent_id, description, tags } = req.body;
     const clientId = req.clientId;
 
     if (!name) return res.status(400).json({ error: 'name is required' });
@@ -143,8 +148,7 @@ export async function createFolder(req: Request, res: Response) {
       parentObjectId = parent._id;
     }
 
-    console.log(name)
-    console.log(parent_id)
+
 
     const newFolder = await Node.create({
       client_id: clientId,
@@ -153,6 +157,10 @@ export async function createFolder(req: Request, res: Response) {
       parent_id: parentObjectId,
       ancestors,
       is_public_upload: false,
+      is_visible_external: false,
+      description: description || null,
+      tags: Array.isArray(tags) ? tags : [],
+      thumbnail_url: null,
       file_metadata: null,
       is_deleted: false,
       created_by: { actor_type: 'user', actor_id: req.userId || null },
@@ -318,6 +326,177 @@ export async function deleteNode(req: Request, res: Response) {
     });
 
     return res.json({ deleted_count: allMatches.length, files_deleted: storageKeys.length });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+// PATCH /api/v1/nodes/:id/metadata
+export async function updateNodeMetadata(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { description, tags, is_visible_external } = req.body;
+
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid node id' });
+    }
+
+    const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids);
+    const node = await Node.findOne({
+      _id: id,
+      client_id: req.tenantUser!.client_id,
+      is_deleted: false,
+      ...scopeFilter,
+    });
+    if (!node) {
+      return res.status(404).json({ error: 'node not found' });
+    }
+
+    if (description !== undefined) node.description = description;
+    if (tags !== undefined) {
+      if (!Array.isArray(tags) || !tags.every((t) => typeof t === 'string')) {
+        return res.status(400).json({ error: 'tags must be an array of strings' });
+      }
+      node.tags = tags;
+    }
+    if (is_visible_external !== undefined) {
+      if (typeof is_visible_external !== 'boolean') {
+        return res.status(400).json({ error: 'is_visible_external must be true or false' });
+      }
+      node.is_visible_external = is_visible_external;
+    }
+    node.updated_at = new Date();
+    await node.save();
+
+    await writeAuditLog({
+      clientId: req.tenantUser!.client_id,
+      actor: { type: 'user', id: req.tenantUser!._id, label: null },
+      action: 'node.metadata_update', // reusing closest existing action — see note below
+      target: { node_id: node._id },
+      metadata: { updated_fields: Object.keys(req.body) },
+      status: 'success',
+      req,
+    });
+
+    return res.json(node);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+export async function uploadThumbnail(req: Request, res: Response) {
+  const file = req.file;
+  const { id } = req.params;
+
+  if (!file) {
+    return res.status(400).json({ error: 'thumbnail file is required' });
+  }
+  if (!Types.ObjectId.isValid(id as any)) {
+    return res.status(400).json({ error: 'invalid node id' });
+  }
+
+  // only allow common image types for a thumbnail
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.mimetype)) {
+    return res.status(400).json({ error: 'thumbnail must be a JPEG, PNG, or WebP image' });
+  }
+
+  const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids);
+  const node = await Node.findOne({
+    _id: id,
+    client_id: req.tenantUser!.client_id,
+    is_deleted: false,
+    ...scopeFilter,
+  });
+  if (!node) {
+    return res.status(404).json({ error: 'node not found' });
+  }
+
+  const cleanFilename = sanitizeFilename(file.originalname);
+  const storageKey = `tenants/${node.client_id}/thumbnails/${node._id}/${cleanFilename}`;
+
+  try {
+    const thumbnailUrl = await uploadPublicThumbnail({
+      storageKey,
+      body: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const oldThumbnailUrl = node.thumbnail_url;
+
+    node.thumbnail_url = thumbnailUrl;
+    await node.save();
+
+    // clean up the old thumbnail from S3 if one existed and was replaced
+    if (oldThumbnailUrl) {
+      const oldKey = extractKeyFromPublicUrl(oldThumbnailUrl);
+      if (oldKey && oldKey !== storageKey) {
+        await deleteFromPublicBucket(oldKey).catch(() => { });
+      }
+    }
+
+    await writeAuditLog({
+      clientId: req.tenantUser!.client_id,
+      actor: { type: 'user', id: req.tenantUser!._id, label: null },
+      action: 'node.metadata_update',
+      target: { node_id: node._id },
+      metadata: { updated_field: 'thumbnail' },
+      status: 'success',
+      req,
+    });
+
+    return res.json(node);
+  } catch (err) {
+    console.error(err);
+    await deleteFromPublicBucket(storageKey).catch(() => { });
+    return res.status(500).json({ error: 'thumbnail upload failed' });
+  }
+}
+
+
+// PATCH /api/v1/nodes/:id/public-upload
+export async function togglePublicUpload(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { is_public_upload } = req.body;
+
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid node id' });
+    }
+    if (typeof is_public_upload !== 'boolean') {
+      return res.status(400).json({ error: 'is_public_upload must be true or false' });
+    }
+
+    const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids);
+    const node = await Node.findOne({
+      _id: id,
+      client_id: req.tenantUser!.client_id,
+      is_deleted: false,
+      ...scopeFilter,
+    });
+    if (!node) {
+      return res.status(404).json({ error: 'node not found' });
+    }
+    if (node.type !== 'folder') {
+      return res.status(400).json({ error: 'only folders can accept public uploads' });
+    }
+
+    node.is_public_upload = is_public_upload;
+    node.updated_at = new Date();
+    await node.save();
+
+    await writeAuditLog({
+      clientId: req.tenantUser!.client_id,
+      actor: { type: 'user', id: req.tenantUser!._id, label: null },
+      action: 'node.metadata_update',
+      target: { node_id: node._id },
+      metadata: { is_public_upload },
+      status: 'success',
+      req,
+    });
+
+    return res.json(node);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal server error' });
