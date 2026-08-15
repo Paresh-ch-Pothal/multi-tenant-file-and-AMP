@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Sidebar } from './SideBar';
-import { TopBar } from './TopBar';
+// import { TopBar } from './TopBar';
 
 
 interface AppShellProps {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Folder, File as FileIcon, Plus, Upload, MoreVertical, Pencil, Trash2, Globe, Eye, Info } from 'lucide-react';
+import { Folder, File as FileIcon, Plus, Upload, Pencil, Trash2, Globe, Eye, Info } from 'lucide-react';
 import { type Node } from '../../types/node';
 import * as nodeService from '../../services/node.services';
 
@@ -44,7 +44,7 @@ export function FileBrowser() {
   const [renameTarget, setRenameTarget] = useState<Node | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Node | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

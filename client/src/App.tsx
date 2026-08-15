@@ -12,9 +12,6 @@ import { ApiKeysPage } from './pages/apikeys/ApiKeys';
 import { PublicUploadPage } from './pages/publicupload/PublicUpload';
 
 
-
-function Files() { return <div>File browser (next step)</div>; }
-
 function AppShellLayout() {
   return (
     <AppShell>
