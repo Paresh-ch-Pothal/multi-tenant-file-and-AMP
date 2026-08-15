@@ -2,6 +2,13 @@
 import { api } from '../api/apiClient';
 import { type Node } from '../types/node';
 
+interface CreateFolderOptions {
+  description?: string;
+  tags?: string[];
+  is_public_upload?: boolean;
+  is_visible_external?: boolean;
+}
+
 export async function listNodes(parentId: string | null): Promise<Node[]> {
   const { data } = await api.get('/nodes', {
     params: parentId ? { parent_id: parentId } : {},
@@ -9,12 +16,16 @@ export async function listNodes(parentId: string | null): Promise<Node[]> {
   return data;
 }
 
-export async function createFolder(name: string, parentId: string | null): Promise<Node> {
+export async function createFolder(
+  name: string,
+  parentId: string | null,
+  options: CreateFolderOptions = {}
+): Promise<Node> {
   const { data } = await api.post('/nodes/createFolder', {
     name,
     parent_id: parentId,
+    ...options,
   });
-  console.log(data)
   return data;
 }
 
@@ -51,5 +62,26 @@ export async function togglePublicUpload(id: string, isPublic: boolean): Promise
 
 export async function toggleVisibleExternal(id: string, isVisible: boolean): Promise<Node> {
   const { data } = await api.patch(`/nodes/${id}/metadata`, { is_visible_external: isVisible });
+  return data;
+}
+
+export async function uploadThumbnail(nodeId: string, file: File): Promise<Node> {
+  const formData = new FormData();
+  formData.append('thumbnail', file);
+
+  const { data } = await api.post(`/nodes/${nodeId}/thumbnail`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+interface UpdateMetadataOptions {
+  description?: string;
+  tags?: string[];
+  is_visible_external?: boolean;
+}
+
+export async function updateNodeMetadata(id: string, updates: UpdateMetadataOptions): Promise<Node> {
+  const { data } = await api.patch(`/nodes/${id}/metadata`, updates);
   return data;
 }

@@ -54,15 +54,14 @@ export async function uploadPublicThumbnail(params: {
 }): Promise<string> {
   await s3Client.send(
     new PutObjectCommand({
-      Bucket: S3_BUCKET,
+      Bucket: S3_PUBLIC_BUCKET,
       Key: params.storageKey,
       Body: params.body,
       ContentType: params.contentType,
-      ACL: 'public-read', // thumbnails only — never use this for the main file bucket
     })
   );
 
-  return `https://${S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.storageKey}`;
+  return `https://${S3_PUBLIC_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.storageKey}`;
 }
 
 

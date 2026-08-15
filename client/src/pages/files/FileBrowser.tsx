@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Folder, File as FileIcon, Plus, Upload, MoreVertical, Pencil, Trash2, Globe, Eye } from 'lucide-react';
+import { Folder, File as FileIcon, Plus, Upload, MoreVertical, Pencil, Trash2, Globe, Eye, Info } from 'lucide-react';
 import { type Node } from '../../types/node';
 import * as nodeService from '../../services/node.services';
 
@@ -7,6 +7,10 @@ import { formatBytes, formatDate } from '../../utils/format';
 import { Button } from '../../components/UI/Buttons';
 import { Modal } from '../../components/UI/Modal';
 import { Input } from '../../components/UI/Input';
+import { Textarea } from '../../components/UI/Textarea';
+import { Checkbox } from '../../components/UI/Checkbox';
+import { TagInput } from '../../components/UI/TagInput';
+import { FilePicker } from '../../components/UI/FilePicker';
 
 interface Crumb {
   id: string | null;
@@ -22,6 +26,21 @@ export function FileBrowser() {
 
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderDescription, setNewFolderDescription] = useState('');
+  const [newFolderTags, setNewFolderTags] = useState<string[]>([]);
+  const [newFolderPublicUpload, setNewFolderPublicUpload] = useState(false);
+  const [newFolderVisibleExternal, setNewFolderVisibleExternal] = useState(false);
+  const [newFolderThumbnail, setNewFolderThumbnail] = useState<File | null>(null);
+
+  const [editDetailsTarget, setEditDetailsTarget] = useState<Node | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editVisibleExternal, setEditVisibleExternal] = useState(false);
+  const [editThumbnailFile, setEditThumbnailFile] = useState<File | null>(null);
+  const [savingDetails, setSavingDetails] = useState(false);
+
+
+
   const [renameTarget, setRenameTarget] = useState<Node | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Node | null>(null);
@@ -61,8 +80,29 @@ export function FileBrowser() {
   async function handleCreateFolder() {
     if (!newFolderName.trim()) return;
     try {
-      await nodeService.createFolder(newFolderName.trim(), currentFolderId);
+      const folder = await nodeService.createFolder(newFolderName.trim(), currentFolderId, {
+        description: newFolderDescription.trim() || undefined,
+        tags: newFolderTags,
+        is_public_upload: newFolderPublicUpload,
+        is_visible_external: newFolderVisibleExternal,
+      });
+
+      // thumbnail requires the node to exist first — separate call once we have the new folder's id
+      if (newFolderThumbnail) {
+        try {
+          await nodeService.uploadThumbnail(folder._id, newFolderThumbnail);
+        } catch {
+          // folder was created successfully even if the thumbnail failed — don't block on this
+          setError('Folder created, but the thumbnail failed to upload. You can add one later.');
+        }
+      }
+
       setNewFolderName('');
+      setNewFolderDescription('');
+      setNewFolderTags([]);
+      setNewFolderPublicUpload(false);
+      setNewFolderVisibleExternal(false);
+      setNewFolderThumbnail(null);
       setCreateFolderOpen(false);
       load(currentFolderId);
     } catch (err: any) {
@@ -78,6 +118,38 @@ export function FileBrowser() {
       load(currentFolderId);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to rename.');
+    }
+  }
+
+  function openEditDetails(node: Node) {
+    setEditDetailsTarget(node);
+    setEditDescription(node.description || '');
+    setEditTags(node.tags || []);
+    setEditVisibleExternal(node.is_visible_external);
+    setEditThumbnailFile(null);
+  }
+
+  async function handleSaveDetails() {
+    if (!editDetailsTarget) return;
+    setSavingDetails(true);
+    setError(null);
+    try {
+      await nodeService.updateNodeMetadata(editDetailsTarget._id, {
+        description: editDescription.trim(),
+        tags: editTags,
+        is_visible_external: editVisibleExternal,
+      });
+
+      if (editThumbnailFile) {
+        await nodeService.uploadThumbnail(editDetailsTarget._id, editThumbnailFile);
+      }
+
+      setEditDetailsTarget(null);
+      load(currentFolderId);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to save details.');
+    } finally {
+      setSavingDetails(false);
     }
   }
 
@@ -175,7 +247,13 @@ export function FileBrowser() {
                       disabled={node.type !== 'folder'}
                       className="flex items-center gap-2 text-left disabled:cursor-default"
                     >
-                      {node.type === 'folder' ? (
+                      {node.thumbnail_url ? (
+                        <img
+                          src={node.thumbnail_url}
+                          alt=""
+                          className="h-5 w-5 shrink-0 rounded object-cover"
+                        />
+                      ) : node.type === 'folder' ? (
                         <Folder size={16} className="shrink-0 text-brand-primary" />
                       ) : (
                         <FileIcon size={16} className="shrink-0 text-slate-400" />
@@ -219,13 +297,21 @@ export function FileBrowser() {
                         title={node.is_visible_external ? 'Hide from external catalog' : 'Show in external catalog'}
                         aria-label="Toggle external visibility"
                         className={`rounded p-1 transition-colors ${node.is_visible_external
-                            ? 'text-brand-primary hover:bg-brand-primary/10'
-                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                          ? 'text-brand-primary hover:bg-brand-primary/10'
+                          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
                           }`}
                       >
                         <Eye size={16} />
                       </button>
 
+                      <button
+                        onClick={() => openEditDetails(node)}
+                        title="Edit details"
+                        aria-label="Edit details"
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                      >
+                        <Info size={16} />
+                      </button>
                       <button
                         onClick={() => {
                           setRenameTarget(node);
@@ -256,6 +342,7 @@ export function FileBrowser() {
       </div>
 
       {/* create folder modal */}
+      {/* create folder modal */}
       <Modal open={createFolderOpen} onClose={() => setCreateFolderOpen(false)} title="New folder">
         <div className="space-y-4">
           <Input
@@ -265,6 +352,34 @@ export function FileBrowser() {
             onChange={(e) => setNewFolderName(e.target.value)}
             autoFocus
           />
+          <Textarea
+            label="Description (optional)"
+            placeholder="What's in this folder?"
+            value={newFolderDescription}
+            onChange={(e) => setNewFolderDescription(e.target.value)}
+          />
+          <TagInput
+            label="Tags (optional)"
+            tags={newFolderTags}
+            onChange={setNewFolderTags}
+          />
+          <FilePicker
+            label="Thumbnail (optional)"
+            file={newFolderThumbnail}
+            onChange={setNewFolderThumbnail}
+          />
+          <div className="space-y-2 rounded border border-slate-200 p-3">
+            <Checkbox
+              label="Accept public uploads (no login required)"
+              checked={newFolderPublicUpload}
+              onChange={setNewFolderPublicUpload}
+            />
+            <Checkbox
+              label="Show in external catalog"
+              checked={newFolderVisibleExternal}
+              onChange={setNewFolderVisibleExternal}
+            />
+          </div>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setCreateFolderOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateFolder}>Create</Button>
@@ -286,6 +401,55 @@ export function FileBrowser() {
             <Button onClick={handleRename}>Save</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* edit details modal */}
+      <Modal open={!!editDetailsTarget} onClose={() => setEditDetailsTarget(null)} title="Edit details">
+        {editDetailsTarget && (
+          <div className="space-y-4">
+            <FilePicker
+              label="Thumbnail"
+              file={editThumbnailFile}
+              onChange={setEditThumbnailFile}
+            />
+            {!editThumbnailFile && editDetailsTarget.thumbnail_url && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <img
+                  src={editDetailsTarget.thumbnail_url}
+                  alt=""
+                  className="h-8 w-8 rounded border border-slate-200 object-cover"
+                />
+                Current thumbnail — pick a new image above to replace it
+              </div>
+            )}
+
+            <Textarea
+              label="Description"
+              placeholder="Add a description…"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+            />
+
+            <TagInput
+              label="Tags"
+              tags={editTags}
+              onChange={setEditTags}
+            />
+
+            <Checkbox
+              label="Show in external catalog"
+              checked={editVisibleExternal}
+              onChange={setEditVisibleExternal}
+            />
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button variant="secondary" onClick={() => setEditDetailsTarget(null)}>Cancel</Button>
+              <Button onClick={handleSaveDetails} disabled={savingDetails}>
+                {savingDetails ? 'Saving…' : 'Save changes'}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* delete confirm modal */}

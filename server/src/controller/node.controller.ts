@@ -5,6 +5,7 @@ import { buildScopeFilter } from '../services/scopedFilter';
 import { writeAuditLog } from '../services/auditLog.services';
 import { buildStorageKey, sanitizeFilename } from '../services/sanitization';
 import { deleteFromPublicBucket, deleteFromS3, deleteManyFromS3, extractKeyFromPublicUrl, uploadPublicThumbnail, uploadToS3 } from '../services/s3.services';
+import { generateUploadToken, verifyUploadToken } from '../services/uploadToken.services';
 
 
 export async function uploadFile(req: Request, res: Response) {
@@ -27,8 +28,24 @@ export async function uploadFile(req: Request, res: Response) {
 
   // public upload check — happens AFTER resolving the node, not before (per your doc's Section 7)
   const isAuthenticated = !!req.tenantUser;
-  if (!isAuthenticated && !parentFolder.is_public_upload) {
-    return res.status(403).json({ error: 'this folder does not accept public uploads' });
+
+  if (!isAuthenticated) {
+    if (!parentFolder.is_public_upload) {
+      return res.status(403).json({ error: 'this folder does not accept public uploads' });
+    }
+
+    const uploadToken = req.body.upload_token || req.headers['x-upload-token'];
+    if (!uploadToken) {
+      return res.status(401).json({ error: 'upload_token is required for public uploads' });
+    }
+
+    const tokenPayload = verifyUploadToken(uploadToken as string);
+    if (!tokenPayload) {
+      return res.status(401).json({ error: 'invalid or expired upload token' });
+    }
+    if (tokenPayload.folderId !== parentFolder._id.toString()) {
+      return res.status(403).json({ error: 'upload token does not match this folder' });
+    }
   }
 
   // if authenticated, enforce tenant + scope match
@@ -127,7 +144,7 @@ export async function uploadFile(req: Request, res: Response) {
 
 export async function createFolder(req: Request, res: Response) {
   try {
-    const { name, parent_id, description, tags } = req.body;
+    const { name, parent_id, description, tags, is_public_upload, is_visible_external } = req.body;
     const clientId = req.clientId;
 
     if (!name) return res.status(400).json({ error: 'name is required' });
@@ -148,16 +165,14 @@ export async function createFolder(req: Request, res: Response) {
       parentObjectId = parent._id;
     }
 
-
-
     const newFolder = await Node.create({
       client_id: clientId,
       type: 'folder',
       name,
       parent_id: parentObjectId,
       ancestors,
-      is_public_upload: false,
-      is_visible_external: false,
+      is_public_upload: typeof is_public_upload === 'boolean' ? is_public_upload : false,
+      is_visible_external: typeof is_visible_external === 'boolean' ? is_visible_external : false,
       description: description || null,
       tags: Array.isArray(tags) ? tags : [],
       thumbnail_url: null,
@@ -497,6 +512,39 @@ export async function togglePublicUpload(req: Request, res: Response) {
     });
 
     return res.json(node);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+
+// POST /api/v1/nodes/:id/upload-token
+// Called by the developer's OWN BACKEND (with API key), never by a browser directly.
+export async function createUploadToken(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid node id' });
+    }
+
+    const folder = await Node.findOne({
+      _id: id,
+      client_id: req.tenantUser!.client_id,
+      is_deleted: false,
+      type: 'folder',
+    });
+
+    if (!folder) {
+      return res.status(404).json({ error: 'folder not found' });
+    }
+    if (!folder.is_public_upload) {
+      return res.status(400).json({ error: 'this folder does not accept public uploads' });
+    }
+
+    const token = generateUploadToken(folder._id.toString(), folder.client_id.toString());
+
+    return res.json({ upload_token: token, expires_in_seconds: 900 });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal server error' });

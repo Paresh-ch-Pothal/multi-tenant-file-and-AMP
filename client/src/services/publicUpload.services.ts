@@ -9,11 +9,13 @@ const publicApi = axios.create({
 export async function publicUploadFile(
   file: File,
   folderId: string,
+  uploadToken: string,
   onProgress?: (pct: number) => void
 ) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('parent_id', folderId);
+  formData.append('upload_token', uploadToken);
 
   const { data } = await publicApi.post('/nodes/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -1,12 +1,16 @@
 import { useState, useRef, type DragEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { UploadCloud, CheckCircle2, XCircle, FileText } from 'lucide-react';
 import { publicUploadFile } from '../../services/publicUpload.services';
 
 type Status = 'idle' | 'uploading' | 'success' | 'error';
 
 export function PublicUploadPage() {
+
   const { folderId } = useParams<{ folderId: string }>();
+  const [searchParams] = useSearchParams();
+  const uploadToken = searchParams.get('token');
+
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState('');
@@ -15,8 +19,8 @@ export function PublicUploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
-    if (!folderId) {
-      setErrorMsg('No upload destination specified.');
+    if (!folderId || !uploadToken) {
+      setErrorMsg('This upload link is invalid or has expired.');
       setStatus('error');
       return;
     }
@@ -26,7 +30,7 @@ export function PublicUploadPage() {
     setErrorMsg('');
 
     try {
-      await publicUploadFile(file, folderId, setProgress);
+      await publicUploadFile(file, folderId, uploadToken, setProgress);
       setStatus('success');
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.error || 'Upload failed. This folder may not accept public uploads.');
@@ -63,9 +67,8 @@ export function PublicUploadPage() {
             onDragLeave={() => setDragActive(false)}
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors ${
-              dragActive ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-300 bg-white'
-            }`}
+            className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors ${dragActive ? 'border-brand-primary bg-brand-primary/5' : 'border-slate-300 bg-white'
+              }`}
           >
             <UploadCloud size={36} className={dragActive ? 'text-brand-primary' : 'text-slate-400'} />
             <p className="text-sm text-slate-600">
