@@ -4,11 +4,19 @@ import { optionalAuth, requireAuth } from '../middleware/auth.middleware'
 import { requirePermission } from '../middleware/rbac.middleware'
 import { upload } from '../middleware/upload.middleware'
 import { requireAuthOrApiKey } from '../middleware/combinedAuth.middleware'
+import { publicUploadLimiter, uploadTokenLimiter } from '../middleware/rareLimiter.middleware'
+import cors from 'cors';
 
 
 const router = express.Router()
 
-router.post('/upload', optionalAuth, upload.single('file'), uploadFile);
+const publicUploadCors = cors({
+  origin: '*',
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+});
+
+router.post('/upload',publicUploadCors, publicUploadLimiter,optionalAuth, upload.single('file'), uploadFile);
 router.post("/createFolder",requireAuth,requirePermission('node:create_folder'),createFolder)
 
 
@@ -21,6 +29,6 @@ router.patch('/:id/metadata', requireAuth, requirePermission('node:edit'), updat
 router.post('/:id/thumbnail', requireAuth, requirePermission('node:edit'), upload.single('thumbnail'), uploadThumbnail);
 router.patch('/:id/public-upload', requireAuth, requirePermission('node:edit'), togglePublicUpload);
 
-router.post('/:id/upload-token', requireAuthOrApiKey, requirePermission('node:read'), createUploadToken);
+router.post('/:id/upload-token',publicUploadCors,uploadTokenLimiter, requireAuthOrApiKey, createUploadToken);
 
 export default router;

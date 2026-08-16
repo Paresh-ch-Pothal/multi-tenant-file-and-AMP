@@ -10,6 +10,7 @@ import { AuditLogPage } from './pages/audit/Auditpage';
 import { SettingsPage } from './pages/settings/SettingPage';
 import { ApiKeysPage } from './pages/apikeys/ApiKeys';
 import { PublicUploadPage } from './pages/publicupload/PublicUpload';
+import { WebhooksPage } from './pages/webhook/WebhookPage';
 
 
 function AppShellLayout() {
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/audit-logs" element={<AuditLogPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
+          <Route path="/webhooks" element={<WebhooksPage />} />
         </Route>
       </Route>
 

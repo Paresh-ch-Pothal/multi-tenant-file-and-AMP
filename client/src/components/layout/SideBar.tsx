@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Folder, Users, Shield, Key, ScrollText, Settings, LogOut } from 'lucide-react';
+import { Folder, Users, Shield, Key, ScrollText, Settings, LogOut, Webhook } from 'lucide-react';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/authContext';
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/api-keys', label: 'API Keys', icon: Key },
   { to: '/audit-logs', label: 'Audit Log', icon: ScrollText },
   { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/webhooks', label: 'Webhooks', icon: Webhook },
 ];
 
 export function Sidebar() {

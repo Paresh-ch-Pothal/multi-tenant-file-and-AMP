@@ -13,6 +13,7 @@ export async function requireAuthOrApiKey(req: Request, res: Response, next: Nex
   const authHeader = req.headers.authorization;
   const apiKeyHeader = req.headers['x-api-key'] as string | undefined;
   const apiSecretHeader = req.headers['x-api-secret'] as string | undefined;
+  console.log(apiKeyHeader, apiSecretHeader)
 
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];

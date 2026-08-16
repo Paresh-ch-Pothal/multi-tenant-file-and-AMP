@@ -6,6 +6,7 @@ import { writeAuditLog } from '../services/auditLog.services';
 import { buildStorageKey, sanitizeFilename } from '../services/sanitization';
 import { deleteFromPublicBucket, deleteFromS3, deleteManyFromS3, extractKeyFromPublicUrl, uploadPublicThumbnail, uploadToS3 } from '../services/s3.services';
 import { generateUploadToken, verifyUploadToken } from '../services/uploadToken.services';
+import { deliverWebhookEvent } from '../services/webhook.services';
 
 
 export async function uploadFile(req: Request, res: Response) {
@@ -114,6 +115,17 @@ export async function uploadFile(req: Request, res: Response) {
       status: 'success',
       req,
     });
+
+    if (!isAuthenticated) {
+      deliverWebhookEvent(parentFolder.client_id, {
+        event: 'node.upload_file.public',
+        node_id: pendingNode._id.toString(),
+        folder_id: parentFolder._id.toString(),
+        file_name: cleanFilename,
+        size_bytes: file.size,
+        uploaded_at: new Date().toISOString(),
+      });
+    }
 
     return res.status(201).json(pendingNode);
   } catch (err) {
