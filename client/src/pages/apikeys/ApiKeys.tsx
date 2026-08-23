@@ -8,6 +8,7 @@ import { Button } from '../../components/UI/Buttons';
 import { Badge } from '../../components/UI/Badge';
 import { Modal } from '../../components/UI/Modal';
 import { Input } from '../../components/UI/Input';
+import { TableEmptyState, TableLoadingRows } from '../../components/UI/TableStates';
 
 export function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -96,9 +97,19 @@ export function ApiKeysPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableLoadingRows columns={5} />
             ) : keys.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No API keys yet.</td></tr>
+              <TableEmptyState
+                colSpan={5}
+                icon={KeyRound}
+                title="No API keys yet"
+                description="Create a key to let your backend read files programmatically."
+                action={
+                  <Button onClick={() => setCreateOpen(true)}>
+                    <Plus size={14} /> New API key
+                  </Button>
+                }
+              />
             ) : (
               keys.map((key) => (
                 <tr key={key._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ScrollText } from 'lucide-react';
 import { type AuditLogEntry, ACTION_OPTIONS } from '../../types/auditLog';
 import * as auditLogService from '../../services/auditLog.services';
 
@@ -7,6 +7,7 @@ import { Button } from '../../components/UI/Buttons';
 import { Select } from '../../components/UI/Select';
 import { Input } from '../../components/UI/Input';
 import { Badge } from '../../components/UI/Badge';
+import { TableEmptyState, TableLoadingRows } from '../../components/UI/TableStates';
 
 
 function actionLabel(action: string) {
@@ -111,9 +112,14 @@ export function AuditLogPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableLoadingRows columns={5} />
             ) : logs.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No activity found for this filter.</td></tr>
+              <TableEmptyState
+                colSpan={5}
+                icon={ScrollText}
+                title="No activity found"
+                description="Try adjusting or clearing your filters."
+              />
             ) : (
               logs.map((entry) => (
                 <tr key={entry._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">

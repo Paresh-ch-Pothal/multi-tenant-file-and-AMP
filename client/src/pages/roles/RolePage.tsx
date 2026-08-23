@@ -107,9 +107,24 @@ export function RolesPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
-          <p className="text-sm text-slate-400">Loading…</p>
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
+              <div className="mt-3 space-y-1.5">
+                <div className="h-3 w-32 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-28 animate-pulse rounded bg-slate-100" />
+              </div>
+            </div>
+          ))
         ) : roles.length === 0 ? (
-          <p className="text-sm text-slate-400">No roles yet — create one to start inviting your team.</p>
+          <div className="col-span-full flex flex-col items-center gap-2 py-12 text-center">
+            <Shield size={32} className="text-slate-300" />
+            <p className="text-sm font-medium text-slate-700">No roles yet</p>
+            <p className="max-w-xs text-xs text-slate-400">Create your first role to start inviting team members.</p>
+            <Button onClick={() => setCreateOpen(true)} className="mt-2">
+              <Plus size={14} /> New role
+            </Button>
+          </div>
         ) : (
           roles.map((role) => (
             <div key={role._id} className="rounded-lg border border-slate-200 bg-white p-4">

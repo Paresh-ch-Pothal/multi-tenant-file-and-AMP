@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Folder, File as FileIcon, Plus, Upload, Pencil, Trash2, Globe, Eye, Info } from 'lucide-react';
+import { Folder, File as FileIcon, Plus, Upload, Pencil, Trash2, Globe, Eye, Info, FolderOpen } from 'lucide-react';
 import { type Node } from '../../types/node';
 import * as nodeService from '../../services/node.services';
 
@@ -11,6 +11,7 @@ import { Textarea } from '../../components/UI/Textarea';
 import { Checkbox } from '../../components/UI/Checkbox';
 import { TagInput } from '../../components/UI/TagInput';
 import { FilePicker } from '../../components/UI/FilePicker';
+import { TableEmptyState, TableLoadingRows } from '../../components/UI/TableStates';
 
 interface Crumb {
   id: string | null;
@@ -235,9 +236,19 @@ export function FileBrowser() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableLoadingRows columns={4} />
             ) : nodes.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">This folder is empty.</td></tr>
+              <TableEmptyState
+                colSpan={4}
+                icon={FolderOpen}
+                title="This folder is empty"
+                description="Upload a file or create a subfolder to get started."
+                action={
+                  <Button variant="secondary" onClick={() => setCreateFolderOpen(true)}>
+                    <Plus size={14} /> New folder
+                  </Button>
+                }
+              />
             ) : (
               nodes.map((node) => (
                 <tr key={node._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">

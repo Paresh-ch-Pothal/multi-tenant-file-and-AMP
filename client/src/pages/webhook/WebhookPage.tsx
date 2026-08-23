@@ -10,6 +10,7 @@ import { Modal } from '../../components/UI/Modal';
 
 import { Badge } from '../../components/UI/Badge';
 import { Input } from '../../components/UI/Input';
+import { TableEmptyState, TableLoadingRows } from '../../components/UI/TableStates';
 
 export function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
@@ -103,9 +104,19 @@ export function WebhooksPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableLoadingRows columns={5} />
             ) : webhooks.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No webhooks configured yet.</td></tr>
+              <TableEmptyState
+                colSpan={5}
+                icon={WebhookIcon}
+                title="No webhooks configured"
+                description="Get notified at your own server when a public upload happens."
+                action={
+                  <Button onClick={() => setCreateOpen(true)}>
+                    <Plus size={14} /> New webhook
+                  </Button>
+                }
+              />
             ) : (
               webhooks.map((wh) => (
                 <tr key={wh._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">

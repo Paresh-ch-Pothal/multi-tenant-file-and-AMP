@@ -11,6 +11,7 @@ import { SettingsPage } from './pages/settings/SettingPage';
 import { ApiKeysPage } from './pages/apikeys/ApiKeys';
 import { PublicUploadPage } from './pages/publicupload/PublicUpload';
 import { WebhooksPage } from './pages/webhook/WebhookPage';
+import { LandingPage } from './pages/landing/LandingPage';
 
 
 function AppShellLayout() {
@@ -24,6 +25,7 @@ function AppShellLayout() {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/upload/:folderId" element={<PublicUploadPage />} />

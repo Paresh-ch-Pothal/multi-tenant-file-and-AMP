@@ -11,6 +11,7 @@ import { Modal } from '../../components/UI/Modal';
 import { Input } from '../../components/UI/Input';
 import { Select } from '../../components/UI/Select';
 import { Badge } from '../../components/UI/Badge';
+import { TableEmptyState, TableLoadingRows } from '../../components/UI/TableStates';
 
 function statusVariant(status: TenantUser['status']) {
   if (status === 'active') return 'success' as const;
@@ -134,9 +135,19 @@ export function UsersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableLoadingRows columns={5} />
             ) : users.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No team members yet.</td></tr>
+              <TableEmptyState
+                colSpan={5}
+                icon={UserPlus}
+                title="No team members yet"
+                description="Invite your first team member to start collaborating."
+                action={
+                  <Button onClick={() => setInviteOpen(true)} disabled={roles.length === 0}>
+                    <UserPlus size={14} /> Invite member
+                  </Button>
+                }
+              />
             ) : (
               users.map((user) => (
                 <tr key={user._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">

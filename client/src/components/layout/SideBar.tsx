@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Folder, Users, Shield, Key, ScrollText, Settings, LogOut, Webhook } from 'lucide-react';
+import { Folder, Users, Shield, Key, ScrollText, Settings, LogOut, Webhook, Sun, Moon } from 'lucide-react';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/authContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const navItems = [
   { to: '/files', label: 'Files', icon: Folder },
@@ -18,6 +19,7 @@ export function Sidebar() {
 
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   function handleLogout() {
     logout();
@@ -61,6 +63,13 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="border-t border-slate-800 px-2 py-3">
+        <button
+          onClick={toggleTheme}
+          className="flex w-full items-center gap-2.5 rounded px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-2.5 rounded px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"

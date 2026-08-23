@@ -15,6 +15,7 @@ import apiKeyRoutes from './routes/apiKey.routes';
 import catalogRoutes from './routes/catalog.routes';
 import { generalLimiter } from './middleware/rareLimiter.middleware';
 import webhookRoutes from './routes/webhook.routes';
+import { runS3Reconciliation } from './jobs/s3Reconciliation.job';
 
 dotenv.config();
 
@@ -65,9 +66,19 @@ app.use("/v1/webhooks", webhookRoutes);
 
 
 const PORT = process.env.PORT || 4000;
+const RECONCILIATION_INTERVAL_MS = 60 * 60 * 1000; // hourly
 
 connectDB().then(() => {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
   });
+
+  // run once shortly after startup, then on a recurring interval
+  setTimeout(() => {
+    runS3Reconciliation().catch((err) => logger.error({ err }, 'S3 reconciliation job failed'));
+  }, 30 * 1000); // wait 30s after boot so it doesn't compete with startup
+
+  setInterval(() => {
+    runS3Reconciliation().catch((err) => logger.error({ err }, 'S3 reconciliation job failed'));
+  }, RECONCILIATION_INTERVAL_MS);
 });

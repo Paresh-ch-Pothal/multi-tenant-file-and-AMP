@@ -12,7 +12,7 @@ interface TopBarProps {
 
 export function TopBar({ breadcrumbs = [], onCrumbClick }: TopBarProps) {
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
+    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-slate-900">
       <nav className="flex items-center gap-1 text-sm text-slate-500">
         {breadcrumbs.length === 0 ? (
           <span className="font-medium text-slate-900">Home</span>
@@ -22,9 +22,8 @@ export function TopBar({ breadcrumbs = [], onCrumbClick }: TopBarProps) {
               {i > 0 && <ChevronRight size={14} className="text-slate-300" />}
               <button
                 onClick={() => onCrumbClick?.(crumb.id)}
-                className={`hover:text-brand-primary ${
-                  i === breadcrumbs.length - 1 ? 'font-medium text-slate-900' : ''
-                }`}
+                className={`hover:text-brand-primary ${i === breadcrumbs.length - 1 ? 'font-medium text-slate-900' : ''
+                  }`}
               >
                 {crumb.name}
               </button>
