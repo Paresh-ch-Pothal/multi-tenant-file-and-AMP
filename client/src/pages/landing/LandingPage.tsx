@@ -73,10 +73,14 @@ export function LandingPage() {
             <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10">
                     <span className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-teal-600 text-sm font-bold text-white dark:bg-teal-500">
-                            F
+                        <span className="flex h-7 w-7 items-center justify-center rounded-md  text-sm font-bold text-white">
+                            <img
+                                src="/logo.png"
+                                alt="FileCraft Logo"
+                                className="h-7 w-7 rounded-md object-contain"
+                            />
                         </span>
-                        File Portal
+                        FileCraft
                     </span>
                     <div className="flex items-center gap-2 sm:gap-4">
                         <button

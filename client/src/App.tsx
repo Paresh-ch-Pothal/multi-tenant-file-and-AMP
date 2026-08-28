@@ -12,6 +12,7 @@ import { ApiKeysPage } from './pages/apikeys/ApiKeys';
 import { PublicUploadPage } from './pages/publicupload/PublicUpload';
 import { WebhooksPage } from './pages/webhook/WebhookPage';
 import { LandingPage } from './pages/landing/LandingPage';
+import { DocsPage } from './pages/docs/DocsPage';
 
 
 function AppShellLayout() {
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/api-keys" element={<ApiKeysPage />} />
           <Route path="/webhooks" element={<WebhooksPage />} />
+          <Route path="/docs" element={<DocsPage />} />
         </Route>
       </Route>
 

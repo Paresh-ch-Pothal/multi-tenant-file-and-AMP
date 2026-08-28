@@ -97,7 +97,8 @@ import {
   ChevronsRight,
   Sun,
   Moon,
-  LogOut
+  LogOut,
+  DockIcon
 } from 'lucide-react';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/authContext';
@@ -213,6 +214,17 @@ export function Sidebar() {
                 )}
                 <Settings size={16} className="shrink-0" />
                 {!collapsed && 'Settings'}
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/docs" title={collapsed ? 'Documentation' : undefined} className={navLinkClass}>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-brand-primary" />
+                )}
+                <DockIcon size={16} className="shrink-0" />
+                {!collapsed && 'Documentation'}
               </>
             )}
           </NavLink>
