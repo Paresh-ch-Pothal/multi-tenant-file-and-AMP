@@ -97,8 +97,7 @@ import {
   ChevronsRight,
   Sun,
   Moon,
-  LogOut,
-  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 import { useBranding } from '../../context/BrandingContext';
 import { useAuth } from '../../context/authContext';
