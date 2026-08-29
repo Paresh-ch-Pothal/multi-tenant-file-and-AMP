@@ -10,7 +10,6 @@ export function PublicUploadPage() {
   const { folderId } = useParams<{ folderId: string }>();
   const [searchParams] = useSearchParams();
   const uploadToken = searchParams.get('token');
-  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
 
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState(0);
@@ -31,8 +30,7 @@ export function PublicUploadPage() {
     setErrorMsg('');
 
     try {
-      const result = await publicUploadFile(file, folderId, uploadToken, setProgress);
-      setUploadedFileUrl(result.file_url || null);
+      await publicUploadFile(file, folderId, uploadToken, setProgress);
       setStatus('success');
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.error || 'Upload failed. This folder may not accept public uploads.');
@@ -52,7 +50,6 @@ export function PublicUploadPage() {
     setFileName('');
     setProgress(0);
     setErrorMsg('');
-    setUploadedFileUrl(null);
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -106,16 +103,6 @@ export function PublicUploadPage() {
           <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-6 text-center">
             <CheckCircle2 size={32} className="mx-auto text-green-600" />
             <p className="text-sm font-medium text-green-800">"{fileName}" uploaded successfully.</p>
-            {uploadedFileUrl && (<a
-
-              href={uploadedFileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-sm font-medium text-brand-primary hover:underline"
-            >
-              View uploaded file
-            </a>
-            )}
             <button onClick={reset} className="text-sm font-medium text-brand-primary hover:underline">
               Upload another file
             </button>
@@ -132,6 +119,6 @@ export function PublicUploadPage() {
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 }
