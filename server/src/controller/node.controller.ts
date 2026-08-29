@@ -4,7 +4,7 @@ import { Node } from '../models/node';
 import { buildScopeFilter } from '../services/scopedFilter';
 import { writeAuditLog } from '../services/auditLog.services';
 import { buildStorageKey, sanitizeFilename } from '../services/sanitization';
-import { deleteFromPublicBucket, deleteFromS3, deleteManyFromS3, extractKeyFromPublicUrl, uploadPublicThumbnail, uploadToS3 } from '../services/s3.services';
+import { deleteFromPublicBucket, deleteFromS3, deleteManyFromS3, extractKeyFromPublicUrl, getSignedFileUrl, uploadPublicThumbnail, uploadToS3 } from '../services/s3.services';
 import { generateUploadToken, verifyUploadToken } from '../services/uploadToken.services';
 import { deliverWebhookEvent } from '../services/webhook.services';
 
@@ -557,6 +557,42 @@ export async function createUploadToken(req: Request, res: Response) {
     const token = generateUploadToken(folder._id.toString(), folder.client_id.toString());
 
     return res.json({ upload_token: token, expires_in_seconds: 900 });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+// GET /api/v1/nodes/:id/download-url
+export async function getFileDownloadUrl(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid node id' });
+    }
+
+    const scopeFilter = buildScopeFilter(req.tenantUser!.scoped_folder_ids);
+    const node = await Node.findOne({
+      _id: id,
+      client_id: req.tenantUser!.client_id,
+      is_deleted: false,
+      ...scopeFilter,
+    });
+
+    if (!node) {
+      return res.status(404).json({ error: 'file not found' });
+    }
+    if (node.type !== 'file' || !node.file_metadata?.storage_key) {
+      return res.status(400).json({ error: 'this node is not a downloadable file' });
+    }
+
+    const url = await getSignedFileUrl(node.file_metadata.storage_key);
+
+    return res.json({
+      download_url: url,
+      expires_in_seconds: 300,
+      file_name: node.file_metadata.original_name,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal server error' });

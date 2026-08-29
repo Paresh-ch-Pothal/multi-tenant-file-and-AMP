@@ -85,3 +85,8 @@ export async function updateNodeMetadata(id: string, updates: UpdateMetadataOpti
   const { data } = await api.patch(`/nodes/${id}/metadata`, updates);
   return data;
 }
+
+export async function getDownloadUrl(nodeId: string): Promise<{ download_url: string; file_name: string }> {
+  const { data } = await api.get(`/nodes/${nodeId}/download-url`);
+  return data;
+}

@@ -1,7 +1,8 @@
 import { Upload } from '@aws-sdk/lib-storage';
-import { DeleteObjectCommand, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import { s3Client, S3_BUCKET, S3_PUBLIC_BUCKET } from '../config/s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export async function uploadToS3(params: {
   storageKey: string;
@@ -79,4 +80,14 @@ export function extractKeyFromPublicUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+
+export async function getSignedFileUrl(storageKey: string, expiresInSeconds = 300): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: storageKey,
+  });
+
+  return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 }
