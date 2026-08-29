@@ -21,30 +21,33 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://127.0.0.1:5500', // VS Code Live Server, used for the local dev-tools tester page
-  'http://localhost:5500',
-];
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL || 'http://localhost:5173',
+//   'http://127.0.0.1:5500', // VS Code Live Server, used for the local dev-tools tester page
+//   'http://localhost:5500',
+//   '*'
+// ];
 
-const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // allow no-origin requests (curl, Postman, file:// pages) and any whitelisted dev origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-KEY', 'X-API-SECRET', 'X-Upload-Token'],
-  exposedHeaders: ['Content-Range', 'X-Total-Count'],
-  credentials: true,
-  maxAge: 86400,
-  optionsSuccessStatus: 200,
-};
+// const corsOptions = {
+//   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+//     // allow no-origin requests (curl, Postman, file:// pages) and any whitelisted dev origin
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-KEY', 'X-API-SECRET', 'X-Upload-Token'],
+//   exposedHeaders: ['Content-Range', 'X-Total-Count'],
+//   credentials: true,
+//   maxAge: 86400,
+//   optionsSuccessStatus: 200,
+// };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(requestLogger);
 app.use('/v1/', generalLimiter)
