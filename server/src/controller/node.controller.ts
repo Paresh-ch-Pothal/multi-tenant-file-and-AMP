@@ -123,11 +123,21 @@ export async function uploadFile(req: Request, res: Response) {
         folder_id: parentFolder._id.toString(),
         file_name: cleanFilename,
         size_bytes: file.size,
-        uploaded_at: new Date().toISOString(),
+        uploaded_at: new Date().toISOString()
       });
     }
 
-    return res.status(201).json(pendingNode);
+    const fileUrl = await getSignedFileUrl(storageKey, 3600).catch(() => null);
+
+    return res.status(201).json({
+      success: true,
+      node: pendingNode,
+      file_url: fileUrl,
+      file_name: cleanFilename,
+      size_bytes: file.size,
+    });
+
+
   } catch (err) {
     console.error(err);
 

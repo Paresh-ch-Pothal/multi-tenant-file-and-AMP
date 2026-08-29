@@ -3,17 +3,13 @@ import { requireAuthOrApiKey } from '../middleware/combinedAuth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { getCatalogNode, listCatalogNodes } from '../controller/catalog.controller';
 import cors from 'cors';
+import { publicCors } from '../middleware/cors.middleware';
 
 
 const router = Router();
 
-const publicUploadCors = cors({
-  origin: '*',
-  methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
-});
 
-router.get('/',publicUploadCors ,requireAuthOrApiKey, listCatalogNodes);
-router.get('/:id',publicUploadCors, requireAuthOrApiKey, getCatalogNode);
+router.get('/', publicCors, requireAuthOrApiKey, listCatalogNodes);
+router.get('/:id', publicCors, requireAuthOrApiKey, getCatalogNode);
 
 export default router;
