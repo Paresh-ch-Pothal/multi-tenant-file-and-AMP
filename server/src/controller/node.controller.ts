@@ -127,7 +127,17 @@ export async function uploadFile(req: Request, res: Response) {
       });
     }
 
-    return res.status(201).json(pendingNode);
+    const fileUrl = await getSignedFileUrl(storageKey, 3600).catch(() => null);
+
+    return res.status(201).json({
+      success: true,
+      node: pendingNode,
+      file_url: fileUrl,
+      file_name: cleanFilename,
+      size_bytes: file.size,
+    });
+
+
   } catch (err) {
     console.error(err);
 
@@ -149,7 +159,7 @@ export async function uploadFile(req: Request, res: Response) {
       req,
     });
 
-    return res.status(500).json({ error: 'file upload failed' });
+    return res.status(500).json({ success: false, error: 'file upload failed' });
   }
 }
 
