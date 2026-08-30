@@ -130,7 +130,7 @@ export function ApiKeysPage() {
             ) : (
               keys.map((key) => (
                 <tr key={key._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50">
-                  <td className="px-4 py-2.5 text-slate-900">
+                  <td className="px-4 py-2.5 text-slate-900 dark:text-white">
                     <button
                       onClick={() => setUsageTarget(key)}
                       className="flex items-center gap-2 hover:text-brand-primary hover:underline"

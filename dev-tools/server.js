@@ -18,8 +18,11 @@ app.use(
     createProxyMiddleware({
         target: TARGET,
         changeOrigin: true,
-        pathRewrite: { '^/api/v1': '/v1' }, // /api/v1/... -> /v1/... matching your real backend
+        pathRewrite: { '^/api/v1': '/v1' },
         onProxyReq: (proxyReq, req) => {
+            // remove the browser's Origin header entirely — this is a server-to-server hop now,
+            // so there's no reason for the target to see a browser origin at all
+            proxyReq.removeHeader('origin');
             console.log(`[proxy] ${req.method} ${req.originalUrl} -> ${TARGET}${req.originalUrl.replace('/api/v1', '/v1')}`);
         },
     })
