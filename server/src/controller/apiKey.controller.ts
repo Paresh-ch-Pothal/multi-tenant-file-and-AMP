@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { generateApiKeyPair, hashSecret } from '../services/apiKey.services';
 import { ApiKey } from '../models/apiKey';
 import { writeAuditLog } from '../services/auditLog.services';
+import { ApiKeyUsage } from '../models/apiKeyUsage';
 
 
 // POST /api/v1/auth/keys
@@ -89,6 +90,48 @@ export async function revokeApiKey(req: Request, res: Response) {
     });
 
     return res.json({ message: 'api key revoked' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+export async function getApiKeyUsage(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid api key id' });
+    }
+
+    const apiKey = await ApiKey.findOne({ _id: id, client_id: req.tenantUser!.client_id });
+    if (!apiKey) {
+      return res.status(404).json({ error: 'api key not found' });
+    }
+
+    // last 30 days, including days with zero usage
+    const DAILY_REQUEST_LIMIT = 50;
+    const days: { date: string; count: number }[] = [];
+    const usageDocs = await ApiKeyUsage.find({ api_key_id: apiKey._id }).select('date count');
+    const usageMap = new Map(usageDocs.map((d) => [d.date, d.count]));
+
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push({ date: dateStr, count: usageMap.get(dateStr) || 0 });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCount = usageMap.get(today) || 0;
+
+    return res.json({
+      key_id: apiKey.key_id,
+      name: apiKey.name,
+      daily_limit: DAILY_REQUEST_LIMIT,
+      used_today: todayCount,
+      remaining_today: Math.max(0, DAILY_REQUEST_LIMIT - todayCount),
+      history: days,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal server error' });

@@ -156,6 +156,106 @@ function ClientDocs() {
                     what happened and who did it.
                 </p>
             </Section>
+
+            <Section icon={FolderPlus} title="Uploading and organizing files">
+                <p>
+                    Open a folder, then click <strong>Upload</strong> in the toolbar and pick a file from
+                    your device. Files can only be uploaded inside a folder — there's no upload at the very
+                    top level, so create at least one folder first if you haven't already.
+                </p>
+                <p>
+                    When creating a folder, you can optionally add a <strong>description</strong>,{' '}
+                    <strong>tags</strong> (press Enter after each one), and a <strong>thumbnail image</strong>{' '}
+                    to make it easier to recognize at a glance. You can add or change these anytime later by
+                    clicking the info (ⓘ) icon next to any file or folder.
+                </p>
+            </Section>
+
+            <Section icon={Globe} title="Understanding the icons in Files">
+                <p>Each row in the Files table has a few small action icons — here's what each one does:</p>
+                <ul className="ml-4 list-disc space-y-1.5">
+                    <li>
+                        <Globe size={13} className="mr-1 inline text-green-600" />
+                        <strong>Globe icon</strong> — toggles <em>public upload</em> for a folder. When
+                        turned on, anyone with a valid upload link can drop a file into that folder without
+                        logging in. Turns green when active.
+                    </li>
+                    <li>
+                        <strong>Eye icon</strong> — toggles whether this file or folder is{' '}
+                        <em>visible in the external catalog</em>. Only items you turn this on for can be
+                        seen by a developer using an API key — everything else stays completely private and
+                        invisible to outside integrations, even if the folder itself is public-upload
+                        enabled. Turns the brand color when active.
+                    </li>
+                    <li>
+                        <strong>Info (ⓘ) icon</strong> — opens the <em>edit details</em> panel, where you can
+                        change the description, tags, thumbnail image, and external visibility for that item.
+                    </li>
+                    <li>
+                        <strong>Pencil icon</strong> — renames the file or folder.
+                    </li>
+                    <li>
+                        <strong>Trash icon</strong> — deletes the file or folder. Deleting a folder removes
+                        everything inside it after you confirm — this cannot be undone.
+                    </li>
+                </ul>
+                <p>
+                    Public upload and catalog visibility are independent settings — a folder can accept
+                    public uploads without anything inside it being shown externally, and vice versa. Think
+                    of the globe icon as "who can put files in," and the eye icon as "who can see this file
+                    exists at all outside your organization."
+                </p>
+            </Section>
+
+            <Section icon={KeyRound} title="Creating an API key for your developer">
+                <p>
+                    If you're working with a developer to build a custom website or integration, they'll
+                    need an API key to read your file catalog or set up public upload links programmatically.
+                </p>
+                <p>Go to <strong>API Keys</strong> in the sidebar and click <strong>New API key</strong>:</p>
+                <ol className="ml-4 list-decimal space-y-1.5">
+                    <li>Give it a recognizable name, like "Production Website Key."</li>
+                    <li>
+                        You'll be shown a <strong>Key ID</strong> and a <strong>Secret</strong> —{' '}
+                        <strong>the secret is shown only once</strong> and cannot be recovered afterward.
+                        Copy both and send them to your developer securely (not over plain email or chat, if
+                        possible).
+                    </li>
+                    <li>
+                        If a key is ever compromised or no longer needed, click <strong>Revoke</strong> next
+                        to it — this disables it immediately without affecting your other keys.
+                    </li>
+                </ol>
+                <p>
+                    API keys can only read files and folders you've explicitly marked visible in the
+                    external catalog (see the eye icon above) — they can never create, edit, or delete
+                    anything in your organization.
+                </p>
+            </Section>
+
+            <Section icon={WebhookIcon} title="Creating a webhook for your developer">
+                <p>
+                    A webhook lets your developer's server get notified automatically whenever someone
+                    uploads a file through a public upload link — useful if they want to process, review,
+                    or display new uploads without constantly checking for them.
+                </p>
+                <p>Go to <strong>Webhooks</strong> in the sidebar and click <strong>New webhook</strong>:</p>
+                <ol className="ml-4 list-decimal space-y-1.5">
+                    <li>
+                        Ask your developer for the URL on their server that should receive the notification,
+                        and paste it in.
+                    </li>
+                    <li>Leave "Public file uploaded" checked (this is currently the only event type available).</li>
+                    <li>
+                        You'll be shown a <strong>signing secret</strong> — share this with your developer so
+                        their server can verify the notification genuinely came from your organization.
+                    </li>
+                </ol>
+                <p>
+                    You can delete a webhook anytime from the same page, which stops notifications
+                    immediately.
+                </p>
+            </Section>
         </div>
     );
 }

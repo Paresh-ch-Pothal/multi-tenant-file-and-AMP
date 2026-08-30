@@ -14,3 +14,17 @@ export interface NewApiKeyResponse {
   name: string;
   warning: string;
 }
+
+export interface ApiKeyUsageDay {
+  date: string;
+  count: number;
+}
+
+export interface ApiKeyUsageResponse {
+  key_id: string;
+  name: string;
+  daily_limit: number;
+  used_today: number;
+  remaining_today: number;
+  history: ApiKeyUsageDay[];
+}

@@ -1,6 +1,6 @@
 
 import { api } from '../api/apiClient';
-import { type ApiKey, type NewApiKeyResponse } from '../types/apiKeys';
+import { type ApiKey, type ApiKeyUsageResponse, type NewApiKeyResponse } from '../types/apiKeys';
 
 export async function listApiKeys(): Promise<ApiKey[]> {
   const { data } = await api.get('/api-keys/');
@@ -14,4 +14,9 @@ export async function createApiKey(name: string): Promise<NewApiKeyResponse> {
 
 export async function revokeApiKey(id: string): Promise<void> {
   await api.delete(`/api-keys/${id}`);
+}
+
+export async function getApiKeyUsage(id: string): Promise<ApiKeyUsageResponse> {
+  const { data } = await api.get(`/api-keys/${id}/usage`);
+  return data;
 }
