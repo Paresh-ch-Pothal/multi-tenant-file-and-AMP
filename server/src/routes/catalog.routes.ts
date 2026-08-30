@@ -13,7 +13,7 @@ const publicUploadCors = cors({
   allowedHeaders: ['Content-Type'],
 });
 
-router.get('/',publicUploadCors ,requireAuthOrApiKey, listCatalogNodes);
-router.get('/:id',publicUploadCors, requireAuthOrApiKey, getCatalogNode);
+router.get('/', publicUploadCors, requireAuthOrApiKey, listCatalogNodes);
+router.get('/:id', publicUploadCors, requireAuthOrApiKey, getCatalogNode);
 
 export default router;
