@@ -1,5 +1,5 @@
 import express from 'express'
-import { createFolder, createUploadToken, deleteNode, getFileDownloadUrl, listNodes, renameNode, togglePublicUpload, updateNodeMetadata, uploadFile, uploadThumbnail } from '../controller/node.controller'
+import { createFolder, createUploadToken, deleteNode, getFileDownloadUrl, listNodes, renameNode, servePublicFile, togglePublicUpload, updateNodeMetadata, uploadFile, uploadThumbnail } from '../controller/node.controller'
 import { optionalAuth, requireAuth } from '../middleware/auth.middleware'
 import { requirePermission } from '../middleware/rbac.middleware'
 import { upload } from '../middleware/upload.middleware'
@@ -32,5 +32,7 @@ router.patch('/:id/public-upload', requireAuth, requirePermission('node:edit'), 
 router.post('/:id/upload-token', publicUploadCors, uploadTokenLimiter, requireAuthOrApiKey, createUploadToken);
 
 router.get('/:id/download-url', requireAuth, requirePermission('node:read'), getFileDownloadUrl);
+
+router.get('/:id/public-file', servePublicFile);
 
 export default router;

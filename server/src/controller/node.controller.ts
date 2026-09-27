@@ -127,12 +127,22 @@ export async function uploadFile(req: Request, res: Response) {
       });
     }
 
-    const fileUrl = await getSignedFileUrl(storageKey, 3600).catch(() => null);
+    // const fileUrl = await getSignedFileUrl(storageKey, 3600).catch(() => null);
+
+    // return res.status(201).json({
+    //   success: true,
+    //   node: pendingNode,
+    //   file_url: fileUrl,
+    //   file_name: cleanFilename,
+    //   size_bytes: file.size,
+    // });
+
+    const permanentFileUrl = `${req.protocol}://${req.get('host')}/v1/nodes/${pendingNode._id}/public-file`;
 
     return res.status(201).json({
       success: true,
       node: pendingNode,
-      file_url: fileUrl,
+      file_url: permanentFileUrl,
       file_name: cleanFilename,
       size_bytes: file.size,
     });
@@ -603,6 +613,45 @@ export async function getFileDownloadUrl(req: Request, res: Response) {
       expires_in_seconds: 300,
       file_name: node.file_metadata.original_name,
     });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'internal server error' });
+  }
+}
+
+
+export async function servePublicFile(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id as any)) {
+      return res.status(400).json({ error: 'invalid node id' });
+    }
+
+    const node = await Node.findOne({
+      _id: id,
+      type: 'file',
+      is_deleted: false,
+    });
+
+    if (!node || !node.file_metadata?.storage_key) {
+      return res.status(404).json({ error: 'file not found' });
+    }
+
+    // security gate: the file's parent folder must currently accept public uploads —
+    // this is the same flag the admin already controls from the Files page
+    const parentFolder = await Node.findOne({
+      _id: node.parent_id,
+      type: 'folder',
+      is_public_upload: true,
+      is_deleted: false,
+    });
+
+    if (!parentFolder) {
+      return res.status(403).json({ error: 'this file is not publicly accessible' });
+    }
+
+    const freshUrl = await getSignedFileUrl(node.file_metadata.storage_key, 3600);
+    return res.redirect(302, freshUrl);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'internal server error' });

@@ -12,4 +12,6 @@ router.get('/', requireAuth, requirePermission('user:manage'), listRoles);
 router.patch('/:id', requireAuth, requirePermission('user:manage'), updateRole);
 router.delete('/:id', requireAuth, requirePermission('user:manage'), deleteRole);
 
+
+
 export default router;

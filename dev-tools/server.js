@@ -5,8 +5,18 @@ const path = require('path');
 const app = express();
 const PORT = 5500;
 
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY, X-API-SECRET');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 // Change this to your deployed backend URL
-const TARGET = 'https://multi-tenant-file-and-amp.onrender.com';
+const TARGET = 'http://localhost:5000';
 
 // Serve tester.html and any other static files in this folder
 app.use(express.static(__dirname));
